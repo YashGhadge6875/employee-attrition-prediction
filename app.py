@@ -40,7 +40,7 @@ elif menu == "Predict Attrition":
     st.title("🤖 Predict Employee Attrition (Logistic Regression)")
 
     # Load Logistic Regression Model
-    log_model = pickle.load(open("models/logistic_model.pkl", "rb"))
+    log_model = pickle.load(open("logistic_model.pkl", "rb"))
 
     st.write("### Enter Employee Details:")
 
@@ -66,3 +66,4 @@ elif menu == "Predict Attrition":
             st.error("⚠️ This employee is likely to **Leave (Attrition = Yes)**")
         else:
             st.success("✅ This employee is likely to **Stay (Attrition = No)**")
+
