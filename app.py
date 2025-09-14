@@ -1,69 +1,118 @@
 # app.py
-
 import streamlit as st
 import pandas as pd
 import pickle
 import plotly.express as px
 
-# ----------------- Load Dataset -----------------
+# -------------------------------
+# Load Model and Dataset
+# -------------------------------
+st.set_page_config(page_title="Employee Attrition Prediction", layout="wide")
+
+# Load model
+model = pickle.load(open("logistic_model.pkl", "rb"))
 df = pd.read_csv("HR Dataset.csv")
 
-# ----------------- Sidebar -----------------
-st.sidebar.title("⚡ Employee Attrition Dashboard")
-menu = st.sidebar.radio("Navigate", ["EDA Dashboard", "Predict Attrition"])
+st.title("💼 Employee Attrition Prediction Dashboard")
 
-# ----------------- EDA Dashboard -----------------
-if menu == "EDA Dashboard":
-    st.title("📊 Employee Attrition Analysis")
+# -------------------------------
+# Tabs for Navigation
+# -------------------------------
+tab1, tab2 = st.tabs(["📊 EDA Dashboard", "🔮 Prediction"])
 
-    # Pie Chart - Attrition Rate
-    fig1 = px.pie(df, names="Attrition", title="Employee Attrition Rate", hole=0.4)
-    st.plotly_chart(fig1)
+# -------------------------------
+# TAB 1: EDA Dashboard
+# -------------------------------
+with tab1:
+    st.subheader("Exploratory Data Analysis")
 
-    # Attrition by Gender
-    fig2 = px.bar(df, x="Gender", color="Attrition", barmode="group",
-                  title="Attrition by Gender")
-    st.plotly_chart(fig2)
+    # Sidebar filters
+    st.sidebar.header("🔎 Filter Data")
+    gender_filter = st.sidebar.multiselect("Select Gender", df["Gender"].unique(), default=df["Gender"].unique())
+    dept_filter = st.sidebar.multiselect("Select Department", df["Department"].unique(), default=df["Department"].unique())
 
-    # Attrition by Business Travel
-    fig3 = px.bar(df, x="BusinessTravel", color="Attrition", barmode="group",
-                  title="Attrition by Business Travel")
-    st.plotly_chart(fig3)
+    df_filtered = df[(df["Gender"].isin(gender_filter)) & (df["Department"].isin(dept_filter))]
 
-    # Attrition by Education Field
-    fig4 = px.bar(df, x="EducationField", color="Attrition", barmode="group",
-                  title="Attrition by Education Field")
-    st.plotly_chart(fig4)
+    # KPIs
+    col1, col2, col3 = st.columns(3)
+    attrition_rate = (df_filtered["Attrition"].value_counts(normalize=True).get("Yes", 0) * 100)
+    avg_income = df_filtered["MonthlyIncome"].mean()
+    avg_age = df_filtered["Age"].mean()
 
-# ----------------- Prediction -----------------
-elif menu == "Predict Attrition":
-    st.title("🤖 Predict Employee Attrition (Logistic Regression)")
+    col1.metric("Attrition %", f"{attrition_rate:.1f}%")
+    col2.metric("Avg. Monthly Income", f"${avg_income:,.0f}")
+    col3.metric("Avg. Age", f"{avg_age:.1f} yrs")
 
-    # Load Logistic Regression Model
-    log_model = pickle.load(open("logistic_model.pkl", "rb"))
+    # Attrition Pie Chart
+    fig_pie = px.pie(df_filtered, names="Attrition", title="Employee Attrition Rate", hole=0.4)
+    st.plotly_chart(fig_pie, use_container_width=True)
 
-    st.write("### Enter Employee Details:")
+    # Gender vs Attrition
+    fig_gender = px.bar(df_filtered, x="Gender", color="Attrition", barmode="group",
+                        title="Attrition by Gender")
+    st.plotly_chart(fig_gender, use_container_width=True)
 
-    # Input form dynamically
-    input_data = {}
-    for col in df.drop("Attrition", axis=1).columns:
-        if df[col].dtype == "object":
-            input_data[col] = st.selectbox(col, df[col].unique())
-        else:
-            input_data[col] = st.number_input(
-                col, float(df[col].min()), float(df[col].max()), float(df[col].mean())
-            )
+    # Business Travel vs Attrition
+    fig_travel = px.histogram(df_filtered, x="BusinessTravel", color="Attrition", barmode="group",
+                              title="Attrition by Business Travel")
+    st.plotly_chart(fig_travel, use_container_width=True)
 
-    if st.button("Predict"):
-        input_df = pd.DataFrame([input_data])
+    # Education Field vs Attrition
+    fig_edu = px.histogram(df_filtered, x="EducationField", color="Attrition", barmode="group",
+                           title="Attrition by Education Field")
+    st.plotly_chart(fig_edu, use_container_width=True)
 
-        # One-hot encode & align
-        final_df = pd.get_dummies(input_df).reindex(columns=df.drop("Attrition", axis=1).columns, fill_value=0)
+# -------------------------------
+# TAB 2: Prediction
+# -------------------------------
+with tab2:
+    st.subheader("🔮 Predict Employee Attrition")
 
-        prediction = log_model.predict(final_df)[0]
+    with st.form("prediction_form"):
+        col1, col2 = st.columns(2)
 
+        with col1:
+            age = st.number_input("Age", 18, 60, 30)
+            gender = st.selectbox("Gender", df["Gender"].unique())
+            job_role = st.selectbox("Job Role", df["JobRole"].unique())
+            dept = st.selectbox("Department", df["Department"].unique())
+
+        with col2:
+            monthly_income = st.number_input("Monthly Income", 1000, 20000, 5000)
+            overtime = st.selectbox("OverTime", df["OverTime"].unique())
+            years_at_company = st.number_input("Years at Company", 0, 40, 5)
+
+        submitted = st.form_submit_button("Predict")
+
+    if submitted:
+        # Create input DataFrame
+        input_data = pd.DataFrame({
+            "Age": [age],
+            "Gender": [gender],
+            "JobRole": [job_role],
+            "Department": [dept],
+            "MonthlyIncome": [monthly_income],
+            "OverTime": [overtime],
+            "YearsAtCompany": [years_at_company]
+        })
+
+        # Encode with dummies
+        input_encoded = pd.get_dummies(input_data)
+
+        # Align with training columns
+        train_cols = model.feature_names_in_
+        for col in train_cols:
+            if col not in input_encoded:
+                input_encoded[col] = 0
+        input_encoded = input_encoded[train_cols]
+
+        # Prediction
+        prediction = model.predict(input_encoded)[0]
+        proba = model.predict_proba(input_encoded)[0][1]
+
+        # Result Display
+        st.write("---")
         if prediction == 1:
-            st.error("⚠️ This employee is likely to **Leave (Attrition = Yes)**")
+            st.error(f"⚠️ Employee is likely to **leave**.\n\n🔹 Probability: {proba:.2f}")
         else:
-            st.success("✅ This employee is likely to **Stay (Attrition = No)**")
-
+            st.success(f"✅ Employee is likely to **stay**.\n\n🔹 Probability: {proba:.2f}")
