@@ -5,12 +5,18 @@ import pickle
 import plotly.express as px
 
 # -------------------------------
-# Load Model and Dataset
+# Page Config
 # -------------------------------
+st.image("HR image.png", use_container_width=True)
 st.set_page_config(page_title="Employee Attrition Prediction", layout="wide")
 
-# Load model
-model = pickle.load(open("logistic_model_new.pkl", "rb"))
+# -------------------------------
+# Load Model and Data
+# -------------------------------
+log_model = pickle.load(open("models/logistic_model.pkl", "rb"))
+le_dict = pickle.load(open("models/label_encoders.pkl", "rb"))
+feature_columns = pickle.load(open("models/feature_columns.pkl", "rb"))
+
 df = pd.read_csv("HR Dataset.csv")
 
 st.title("💼 Employee Attrition Prediction Dashboard")
@@ -37,7 +43,6 @@ with tab1:
     col1, col2, col3 = st.columns(3)
     attrition_rate = (df_filtered["Attrition"].value_counts(normalize=True).get("Yes", 0) * 100)
     avg_income = df_filtered["MonthlyIncome"].mean()
-    avg_age = df_filtered["Age"].mean()
     avg_years = df_filtered["YearsAtCompany"].mean()
 
     col1.metric("Attrition %", f"{attrition_rate:.1f}%")
@@ -54,8 +59,7 @@ with tab1:
     st.plotly_chart(fig_pie, use_container_width=True)
 
     # Gender vs Attrition
-    fig_gender = px.bar(df_filtered, x="Gender", color="Attrition", barmode="group",
-                        title="Attrition by Gender")
+    fig_gender = px.bar(df_filtered, x="Gender", color="Attrition", barmode="group", title="Attrition by Gender")
     st.plotly_chart(fig_gender, use_container_width=True)
 
     # Business Travel vs Attrition
@@ -88,10 +92,10 @@ with tab1:
     st.plotly_chart(fig_corr, use_container_width=True)
 
 # -------------------------------
-# TAB 2: Prediction
+# TAB 2: Prediction (Logistic Regression Only)
 # -------------------------------
 with tab2:
-    st.subheader("🔮 Predict Employee Attrition")
+    st.subheader("🔮 Predict Employee Attrition (Logistic Regression)")
 
     with st.form("prediction_form"):
         col1, col2 = st.columns(2)
@@ -129,27 +133,25 @@ with tab2:
             "EnvironmentSatisfaction": [environment_satisfaction]
         })
 
-        # Encode with dummies
-        input_encoded = pd.get_dummies(input_data)
+        # Apply Label Encoding (match training)
+        for col in input_data.columns:
+            if col in le_dict:
+                input_data[col] = le_dict[col].transform(input_data[col])
 
-        # Align with training columns
-        train_cols = model.feature_names_in_
-        for col in train_cols:
-            if col not in input_encoded:
-                input_encoded[col] = 0
-        input_encoded = input_encoded[train_cols]
+        # Align columns with training features
+        for col in feature_columns:
+            if col not in input_data:
+                input_data[col] = 0
+        input_data = input_data[feature_columns]
 
         # Prediction
-        prediction = model.predict(input_encoded)[0]
-        proba = model.predict_proba(input_encoded)[0][1]
+        pred = log_model.predict(input_data)[0]
+        proba = log_model.predict_proba(input_data)[0][1]
 
         # Result Display
         st.write("---")
-        if prediction == 1:
-            st.error(f"⚠️ Employee is likely to **leave**.\n\n🔹 Probability: {proba:.2f}")
+        if pred == 1:
+            st.error(f"⚠️ Employee is likely to **Leave** (Probability: {proba:.2f})")
         else:
-            st.success(f"✅ Employee is likely to **stay**.\n\n🔹 Probability: {proba:.2f}")
-
-
-
+            st.success(f"✅ Employee is likely to **Stay** (Probability: {1-proba:.2f})")
 
