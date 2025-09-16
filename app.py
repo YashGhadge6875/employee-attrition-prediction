@@ -38,10 +38,16 @@ with tab1:
     attrition_rate = (df_filtered["Attrition"].value_counts(normalize=True).get("Yes", 0) * 100)
     avg_income = df_filtered["MonthlyIncome"].mean()
     avg_age = df_filtered["Age"].mean()
+    avg_years = df_filtered["YearsAtCompany"].mean()
 
     col1.metric("Attrition %", f"{attrition_rate:.1f}%")
     col2.metric("Avg. Monthly Income", f"${avg_income:,.0f}")
-    col3.metric("Avg. Age", f"{avg_age:.1f} yrs")
+    col3.metric("Avg. Tenure (Years)", f"{avg_years:.1f}")
+
+    # -------------------------------
+    # Charts
+    # -------------------------------
+    st.markdown("### 📊 Visual Insights")
 
     # Attrition Pie Chart
     fig_pie = px.pie(df_filtered, names="Attrition", title="Employee Attrition Rate", hole=0.4)
@@ -62,6 +68,25 @@ with tab1:
                            title="Attrition by Education Field")
     st.plotly_chart(fig_edu, use_container_width=True)
 
+    # Job Role vs Monthly Income
+    fig_income = px.box(df_filtered, x="JobRole", y="MonthlyIncome", color="Attrition",
+                        title="Monthly Income Distribution by Job Role")
+    st.plotly_chart(fig_income, use_container_width=True)
+
+    # Age vs Monthly Income Scatter
+    fig_scatter = px.scatter(df_filtered, x="Age", y="MonthlyIncome", color="Attrition",
+                             size="YearsAtCompany", hover_data=["JobRole"],
+                             title="Age vs Income (Bubble size = Years at Company)")
+    st.plotly_chart(fig_scatter, use_container_width=True)
+
+    # Correlation Heatmap
+    st.subheader("📈 Correlation Heatmap")
+    df_encoded = pd.get_dummies(df_filtered, drop_first=True)
+    corr = df_encoded.corr()
+    fig_corr = px.imshow(corr, text_auto=True, aspect="auto", color_continuous_scale="RdBu_r",
+                         title="Correlation Heatmap of HR Features")
+    st.plotly_chart(fig_corr, use_container_width=True)
+
 # -------------------------------
 # TAB 2: Prediction
 # -------------------------------
@@ -76,11 +101,16 @@ with tab2:
             gender = st.selectbox("Gender", df["Gender"].unique())
             job_role = st.selectbox("Job Role", df["JobRole"].unique())
             dept = st.selectbox("Department", df["Department"].unique())
+            business_travel = st.selectbox("Business Travel", df["BusinessTravel"].unique())
+            education_field = st.selectbox("Education Field", df["EducationField"].unique())
 
         with col2:
             monthly_income = st.number_input("Monthly Income", 1000, 20000, 5000)
             overtime = st.selectbox("OverTime", df["OverTime"].unique())
             years_at_company = st.number_input("Years at Company", 0, 40, 5)
+            total_working_years = st.number_input("Total Working Years", 0, 40, 10)
+            job_level = st.selectbox("Job Level", sorted(df["JobLevel"].unique()))
+            environment_satisfaction = st.selectbox("Environment Satisfaction", sorted(df["EnvironmentSatisfaction"].unique()))
 
         submitted = st.form_submit_button("Predict")
 
@@ -91,9 +121,14 @@ with tab2:
             "Gender": [gender],
             "JobRole": [job_role],
             "Department": [dept],
+            "BusinessTravel": [business_travel],
+            "EducationField": [education_field],
             "MonthlyIncome": [monthly_income],
             "OverTime": [overtime],
-            "YearsAtCompany": [years_at_company]
+            "YearsAtCompany": [years_at_company],
+            "TotalWorkingYears": [total_working_years],
+            "JobLevel": [job_level],
+            "EnvironmentSatisfaction": [environment_satisfaction]
         })
 
         # Encode with dummies
@@ -116,3 +151,4 @@ with tab2:
             st.error(f"⚠️ Employee is likely to **leave**.\n\n🔹 Probability: {proba:.2f}")
         else:
             st.success(f"✅ Employee is likely to **stay**.\n\n🔹 Probability: {proba:.2f}")
+
