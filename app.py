@@ -10,7 +10,7 @@ import plotly.express as px
 st.set_page_config(page_title="Employee Attrition Prediction", layout="wide")
 
 # Load model
-model = pickle.load(open("logistic_model.pkl", "rb"))
+model = pickle.load(open("logistic_model_new.pkl", "rb"))
 df = pd.read_csv("HR Dataset.csv")
 
 st.title("💼 Employee Attrition Prediction Dashboard")
@@ -151,4 +151,5 @@ with tab2:
             st.error(f"⚠️ Employee is likely to **leave**.\n\n🔹 Probability: {proba:.2f}")
         else:
             st.success(f"✅ Employee is likely to **stay**.\n\n🔹 Probability: {proba:.2f}")
+
 
