@@ -127,7 +127,6 @@ with tab2:
             "OverTime": [overtime],
             "YearsAtCompany": [years_at_company],
             "TotalWorkingYears": [total_working_years],
-            "JobLevel": [job_level],
             "EnvironmentSatisfaction": [environment_satisfaction]
         })
 
@@ -151,5 +150,6 @@ with tab2:
             st.error(f"⚠️ Employee is likely to **leave**.\n\n🔹 Probability: {proba:.2f}")
         else:
             st.success(f"✅ Employee is likely to **stay**.\n\n🔹 Probability: {proba:.2f}")
+
 
 
