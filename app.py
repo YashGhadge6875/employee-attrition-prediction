@@ -109,7 +109,6 @@ with tab2:
             overtime = st.selectbox("OverTime", df["OverTime"].unique())
             years_at_company = st.number_input("Years at Company", 0, 40, 5)
             total_working_years = st.number_input("Total Working Years", 0, 40, 10)
-            job_level = st.selectbox("Job Level", sorted(df["JobLevel"].unique()))
             environment_satisfaction = st.selectbox("Environment Satisfaction", sorted(df["EnvironmentSatisfaction"].unique()))
 
         submitted = st.form_submit_button("Predict")
@@ -150,6 +149,7 @@ with tab2:
             st.error(f"⚠️ Employee is likely to **leave**.\n\n🔹 Probability: {proba:.2f}")
         else:
             st.success(f"✅ Employee is likely to **stay**.\n\n🔹 Probability: {proba:.2f}")
+
 
 
 
