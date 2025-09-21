@@ -34,15 +34,22 @@ page = st.sidebar.radio("Navigation", ["Dashboard", "Prediction"])
 if page == "Dashboard":
     st.title("Employee Attrition Dashboard")
 
-    # KPI Cards
-    attrition_rate = (df["Attrition"].value_counts(normalize=True).get("Yes", 0) * 100)
-    avg_years = df["YearsAtCompany"].mean()
-    total_employees = len(df)
+    # Enhanced KPI Cards
+attrited_df = df[df["Attrition"] == "Yes"]
+attrition_rate = len(attrited_df) / len(df) * 100
+total_employees = len(df)
+attrition_count = len(attrited_df)
+top_attrited_role = (
+    attrited_df["JobRole"].value_counts().idxmax()
+    if not attrited_df["JobRole"].empty else "N/A"
+)
 
-    kpi1, kpi2, kpi3 = st.columns(3)
-    kpi1.metric("Attrition %", f"{attrition_rate:.1f}%")
-    kpi2.metric("Avg Tenure (Years)", f"{avg_years:.1f}")
-    kpi3.metric("Total Employees", total_employees)
+# Display KPIs
+kpi1, kpi2, kpi3 = st.columns(3)
+kpi1.metric("📉 Attrition Rate", f"{attrition_rate:.1f}%")
+kpi2.metric("🔁 Attrition Count", attrition_count)
+kpi3.metric("🏷️ Top Attrited Role", top_attrited_role)
+
 
     st.markdown("---")
 
@@ -150,3 +157,4 @@ else:
             st.error(f"⚠️ Employee is likely to **Leave** (Probability: {proba:.2f})")
         else:
             st.success(f"✅ Employee is likely to **Stay** (Probability: {1 - proba:.2f})")
+
