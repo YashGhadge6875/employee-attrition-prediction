@@ -7,7 +7,6 @@ import plotly.express as px
 # -------------------------------
 # Page Config
 # -------------------------------
-st.image("HR image.png", use_container_width=True)
 st.set_page_config(page_title="Employee Attrition Prediction", layout="wide")
 
 # -------------------------------
@@ -19,82 +18,70 @@ feature_columns = pickle.load(open("feature_columns.pkl", "rb"))
 
 df = pd.read_csv("HR Dataset.csv")
 
-st.title("💼 Employee Attrition Prediction Dashboard")
+# -------------------------------
+# Sidebar Navigation
+# -------------------------------
+st.sidebar.title("💼 Dashboard")
+page = st.sidebar.radio("Navigation", ["Dashboard", "Prediction"])
 
 # -------------------------------
-# Tabs for Navigation
+# DASHBOARD PAGE
 # -------------------------------
-tab1, tab2 = st.tabs(["📊 EDA Dashboard", "🔮 Prediction"])
+if page == "Dashboard":
+    st.title("Employee Attrition Dashboard")
 
-# -------------------------------
-# TAB 1: EDA Dashboard
-# -------------------------------
-with tab1:
-    st.subheader("Exploratory Data Analysis")
+    # KPI Cards
+    attrition_rate = (df["Attrition"].value_counts(normalize=True).get("Yes", 0) * 100)
+    avg_years = df["YearsAtCompany"].mean()
+    total_employees = len(df)
+    
+    kpi1, kpi2, kpi3 = st.columns(3)
+    kpi1.metric("Attrition %", f"{attrition_rate:.1f}%")
+    kpi2.metric("Avg Tenure (Years)", f"{avg_years:.1f}")
+    kpi3.metric("Total Employees", total_employees)
 
-    # Sidebar filters
-    st.sidebar.header("🔎 Filter Data")
-    gender_filter = st.sidebar.multiselect("Select Gender", df["Gender"].unique(), default=df["Gender"].unique())
-    dept_filter = st.sidebar.multiselect("Select Department", df["Department"].unique(), default=df["Department"].unique())
+    st.markdown("---")
+    
+    # Charts in Grid Layout
+    theme = "plotly_white"
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        fig_pie = px.pie(df, names="Attrition", title="Employee Attrition Rate",
+                         hole=0.4, template=theme, color_discrete_sequence=px.colors.qualitative.Set2)
+        st.plotly_chart(fig_pie, use_container_width=True)
 
-    df_filtered = df[(df["Gender"].isin(gender_filter)) & (df["Department"].isin(dept_filter))]
+        fig_gender = px.bar(df, x="Gender", color="Attrition", barmode="group",
+                            title="Attrition by Gender", template=theme,
+                            color_discrete_sequence=px.colors.qualitative.Vivid)
+        st.plotly_chart(fig_gender, use_container_width=True)
 
-    # KPIs
-    col1, col2, col3 = st.columns(3)
-    attrition_rate = (df_filtered["Attrition"].value_counts(normalize=True).get("Yes", 0) * 100)
-    avg_income = df_filtered["MonthlyIncome"].mean()
-    avg_years = df_filtered["YearsAtCompany"].mean()
+        fig_edu = px.bar(df, x="Education", color="Attrition", barmode="group",
+                         title="Employee Attrition by Education", template=theme,
+                         color_discrete_sequence=px.colors.qualitative.Bold)
+        st.plotly_chart(fig_edu, use_container_width=True)
 
-    col1.metric("Attrition %", f"{attrition_rate:.1f}%")
-    col2.metric("Avg. Monthly Income", f"${avg_income:,.0f}")
-    col3.metric("Avg. Tenure (Years)", f"{avg_years:.1f}")
+    with col2:
+        fig_marital = px.pie(df, names="MaritalStatus", color="Attrition",
+                              title="Attrition by Marital Status", hole=0.4,
+                              template=theme, color_discrete_sequence=px.colors.qualitative.Set3)
+        st.plotly_chart(fig_marital, use_container_width=True)
 
-    # -------------------------------
-    # Charts
-    # -------------------------------
-    st.markdown("### 📊 Visual Insights")
+        fig_travel = px.histogram(df, x="BusinessTravel", color="Attrition", barmode="group",
+                                  title="Attrition by Business Travel", template=theme,
+                                  color_discrete_sequence=px.colors.qualitative.Pastel)
+        st.plotly_chart(fig_travel, use_container_width=True)
 
-    # Attrition Pie Chart
-    fig_pie = px.pie(df_filtered, names="Attrition", title="Employee Attrition Rate", hole=0.4)
-    st.plotly_chart(fig_pie, use_container_width=True)
-
-    # Gender vs Attrition
-    fig_gender = px.bar(df_filtered, x="Gender", color="Attrition", barmode="group", title="Attrition by Gender")
-    st.plotly_chart(fig_gender, use_container_width=True)
-
-    # Business Travel vs Attrition
-    fig_travel = px.histogram(df_filtered, x="BusinessTravel", color="Attrition", barmode="group",
-                              title="Attrition by Business Travel")
-    st.plotly_chart(fig_travel, use_container_width=True)
-
-    # Education Field vs Attrition
-    fig_edu = px.histogram(df_filtered, x="EducationField", color="Attrition", barmode="group",
-                           title="Attrition by Education Field")
-    st.plotly_chart(fig_edu, use_container_width=True)
-
-    # Job Role vs Monthly Income
-    fig_income = px.box(df_filtered, x="JobRole", y="MonthlyIncome", color="Attrition",
-                        title="Monthly Income Distribution by Job Role")
-    st.plotly_chart(fig_income, use_container_width=True)
-
-    # Age vs Monthly Income Scatter
-    fig_scatter = px.scatter(df_filtered, x="Age", y="MonthlyIncome", color="Attrition",
-                             size="YearsAtCompany", hover_data=["JobRole"],
-                             title="Age vs Income (Bubble size = Years at Company)")
-    st.plotly_chart(fig_scatter, use_container_width=True)
-
-    # Correlation Heatmap
-    st.subheader("📈 Correlation Heatmap")
-    df_encoded = pd.get_dummies(df_filtered, drop_first=True)
-    corr = df_encoded.corr()
-    fig_corr = px.imshow(corr, text_auto=True, aspect="auto", color_continuous_scale="RdBu_r",
-                         title="Correlation Heatmap of HR Features")
-    st.plotly_chart(fig_corr, use_container_width=True)
+        fig_income = px.box(df, x="JobRole", y="MonthlyIncome", color="Attrition",
+                            title="Monthly Income by Job Role", template=theme,
+                            color_discrete_sequence=px.colors.qualitative.D3)
+        st.plotly_chart(fig_income, use_container_width=True)
 
 # -------------------------------
-# TAB 2: Prediction (Logistic Regression Only)
+# PREDICTION PAGE
 # -------------------------------
-with tab2:
+else:
     st.subheader("🔮 Predict Employee Attrition (Logistic Regression)")
 
     with st.form("prediction_form"):
@@ -118,7 +105,6 @@ with tab2:
         submitted = st.form_submit_button("Predict")
 
     if submitted:
-        # Create input DataFrame
         input_data = pd.DataFrame({
             "Age": [age],
             "Gender": [gender],
@@ -133,26 +119,20 @@ with tab2:
             "EnvironmentSatisfaction": [environment_satisfaction]
         })
 
-        # Apply Label Encoding (match training)
         for col in input_data.columns:
             if col in le_dict:
                 input_data[col] = le_dict[col].transform(input_data[col])
 
-        # Align columns with training features
         for col in feature_columns:
             if col not in input_data:
                 input_data[col] = 0
         input_data = input_data[feature_columns]
 
-        # Prediction
         pred = log_model.predict(input_data)[0]
         proba = log_model.predict_proba(input_data)[0][1]
 
-        # Result Display
         st.write("---")
         if pred == 1:
             st.error(f"⚠️ Employee is likely to **Leave** (Probability: {proba:.2f})")
         else:
             st.success(f"✅ Employee is likely to **Stay** (Probability: {1-proba:.2f})")
-
-
