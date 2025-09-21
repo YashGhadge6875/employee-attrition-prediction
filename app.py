@@ -34,28 +34,27 @@ page = st.sidebar.radio("Navigation", ["Dashboard", "Prediction"])
 if page == "Dashboard":
     st.title("Employee Attrition Dashboard")
 
-    # Enhanced KPI Cards
-attrited_df = df[df["Attrition"] == "Yes"]
-attrition_rate = len(attrited_df) / len(df) * 100
-total_employees = len(df)
-attrition_count = len(attrited_df)
-top_attrited_role = (
-    attrited_df["JobRole"].value_counts().idxmax()
-    if not attrited_df["JobRole"].empty else "N/A"
-)
+    # KPIs
+    attrited_df = df[df["Attrition"] == "Yes"]
+    attrition_rate = len(attrited_df) / len(df) * 100
+    total_employees = len(df)
+    attrition_count = len(attrited_df)
+    top_attrited_role = (
+        attrited_df["JobRole"].value_counts().idxmax()
+        if not attrited_df["JobRole"].empty else "N/A"
+    )
 
-# Display KPIs
-kpi1, kpi2, kpi3 = st.columns(3)
-kpi1.metric("📉 Attrition Rate", f"{attrition_rate:.1f}%")
-kpi2.metric("🔁 Attrition Count", attrition_count)
-kpi3.metric("🏷️ Top Attrited Role", top_attrited_role)
-
+    # Display KPI cards
+    kpi1, kpi2, kpi3 = st.columns(3)
+    kpi1.metric("📉 Attrition Rate", f"{attrition_rate:.1f}%")
+    kpi2.metric("🔁 Attrition Count", attrition_count)
+    kpi3.metric("🏷️ Top Attrited Role", top_attrited_role)
 
     st.markdown("---")
 
-    # Theme
     theme = "plotly_white"
 
+    # Chart layout
     col1, col2 = st.columns(2)
 
     with col1:
@@ -68,7 +67,7 @@ kpi3.metric("🏷️ Top Attrited Role", top_attrited_role)
                             color_discrete_sequence=px.colors.qualitative.Vivid)
         st.plotly_chart(fig_gender, use_container_width=True)
 
-        # ✅ NEW: Attrition by YearsAtCompany
+        # ✅ New: Years at Company Attrition
         fig_years = px.histogram(df, x="YearsAtCompany", color="Attrition", barmode="group",
                                  title="Employee Attrition by Years at Company", template=theme,
                                  color_discrete_sequence=px.colors.qualitative.Prism)
@@ -135,20 +134,19 @@ else:
             "EnvironmentSatisfaction": [environment_satisfaction]
         })
 
-        # Encode categorical variables using loaded label encoders
+        # Encode categorical variables
         for col in input_data.columns:
             if col in le_dict:
                 input_data[col] = le_dict[col].transform(input_data[col])
 
-        # Add missing features with default value (0)
+        # Add any missing features
         for col in feature_columns:
             if col not in input_data:
                 input_data[col] = 0
 
-        # Reorder columns to match model input
         input_data = input_data[feature_columns]
 
-        # Predict
+        # Make prediction
         pred = log_model.predict(input_data)[0]
         proba = log_model.predict_proba(input_data)[0][1]
 
