@@ -34,9 +34,6 @@ page = st.sidebar.radio("Navigation", ["Dashboard", "Prediction"])
 if page == "Dashboard":
     st.title("Employee Attrition Dashboard")
 
-    # Display available columns for debugging (optional)
-    # st.write("📋 Available columns:", df.columns.tolist())
-
     # KPI Cards
     attrition_rate = (df["Attrition"].value_counts(normalize=True).get("Yes", 0) * 100)
     avg_years = df["YearsAtCompany"].mean()
@@ -64,14 +61,11 @@ if page == "Dashboard":
                             color_discrete_sequence=px.colors.qualitative.Vivid)
         st.plotly_chart(fig_gender, use_container_width=True)
 
-        # ✅ Safely plot Education if column exists
-        if "Education" in df.columns and "Attrition" in df.columns:
-            fig_edu = px.bar(df, x="Education", color="Attrition", barmode="group",
-                             title="Employee Attrition by Education", template=theme,
-                             color_discrete_sequence=px.colors.qualitative.Bold)
-            st.plotly_chart(fig_edu, use_container_width=True)
-        else:
-            st.warning("⚠️ Column 'Education' is missing. Skipping education chart.")
+        # ✅ NEW: Attrition by YearsAtCompany
+        fig_years = px.histogram(df, x="YearsAtCompany", color="Attrition", barmode="group",
+                                 title="Employee Attrition by Years at Company", template=theme,
+                                 color_discrete_sequence=px.colors.qualitative.Prism)
+        st.plotly_chart(fig_years, use_container_width=True)
 
     with col2:
         fig_marital = px.pie(df, names="MaritalStatus", color="Attrition",
