@@ -160,4 +160,7 @@ else:
         if pred == 1:
             st.error(f"⚠ Employee is likely to *Leave* (Probability: {proba:.2f})")
         else:
-            st.success(f"✅ Employee is likely to *Stay* (Probability: {1 - proba:.2f})")
+            st.success(f"✅ Employee is likely to *Stay* (Probability: {1 - proba:.2f})")
+
+           
+
