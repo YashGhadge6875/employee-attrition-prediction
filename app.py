@@ -1,79 +1,66 @@
-# -------------------------------
-# Imports
-# -------------------------------
+# app.py
+
 import streamlit as st
 import pandas as pd
 import pickle
 import plotly.express as px
-import numpy as np
 
 # -------------------------------
-# Load Models, Encoders, and Data
-# -------------------------------
-log_model = pickle.load(open("logistic_model.pkl", "rb"))
-le_dict = pickle.load(open("label_encoders.pkl", "rb"))
-feature_cols = pickle.load(open("feature_columns.pkl", "rb"))
-
-df = pd.read_csv("HR Dataset.csv")  # Original dataset for dashboard
-
-# Encode categorical columns for dashboard visualizations
-for col, le in le_dict.items():
-    if col in df.columns:
-        df[col] = le.transform(df[col])
-
-# -------------------------------
-# Page Selection
-# -------------------------------
-page = st.sidebar.selectbox("Choose Page", ["Dashboard", "Prediction"])
-
-# -------------------------------
-# Page Config & Custom CSS
+# Page Config
 # -------------------------------
 st.set_page_config(page_title="Employee Attrition Prediction", layout="wide")
 
-st.markdown("""
-<style>
-.big-font {
-    font-size:20px !important;
-    font-weight:600;
-    color:#2F4F4F;
-}
-.metric-card {
-    background-color: #f9f9f9;
-    padding: 15px;
-    border-radius: 12px;
-    text-align: center;
-    box-shadow: 2px 2px 10px rgba(0,0,0,0.05);
-}
-</style>
-""", unsafe_allow_html=True)
+# -------------------------------
+# Load Model and Data
+# -------------------------------
+log_model = pickle.load(open("logistic_model.pkl", "rb"))
+le_dict = pickle.load(open("label_encoders.pkl", "rb"))
+feature_columns = pickle.load(open("feature_columns.pkl", "rb"))
+
+df = pd.read_csv("HR Dataset.csv")
+
+# Clean column names
+df.columns = df.columns.str.strip()
+
+# -------------------------------
+# Sidebar Navigation
+# -------------------------------
+st.sidebar.title("💼 Dashboard")
+page = st.sidebar.radio("Navigation", ["Dashboard", "Prediction"])
 
 # -------------------------------
 # DASHBOARD PAGE
 # -------------------------------
+# -------------------------------
+# DASHBOARD PAGE
+# -------------------------------
 if page == "Dashboard":
-    st.image("HR image.png", use_container_width=True)
-    st.title("📊 Employee Attrition Dashboard")
-    st.markdown("<div class='big-font'>A bright and interactive dashboard to analyze attrition trends</div>", unsafe_allow_html=True)
+    st.title("Employee Attrition Dashboard")
 
     # KPIs
-    attrited_df = df[df["Attrition"] == 1]  # 1 = Yes after encoding
+    attrited_df = df[df["Attrition"] == "Yes"]
     attrition_rate = len(attrited_df) / len(df) * 100
     attrition_count = len(attrited_df)
     avg_income = df["MonthlyIncome"].mean()
 
-    kpi1, kpi2, kpi3 = st.columns(3)
-    with kpi1:
-        st.markdown(f"<div class='metric-card'>📉<br>Attrition Rate<br><h3>{attrition_rate:.1f}%</h3></div>", unsafe_allow_html=True)
-    with kpi2:
-        st.markdown(f"<div class='metric-card'>🔁<br>Attrition Count<br><h3>{attrition_count}</h3></div>", unsafe_allow_html=True)
-    with kpi3:
-        st.markdown(f"<div class='metric-card'>💰<br>Avg Monthly Income<br><h3>${avg_income:,.0f}</h3></div>", unsafe_allow_html=True)
+    # New KPI: Avg Years at Company (Attrited vs Non-Attrited)
+    avg_years_attrited = df[df["Attrition"] == "Yes"]["YearsAtCompany"].mean()
+    avg_years_stayed = df[df["Attrition"] == "No"]["YearsAtCompany"].mean()
 
+    # Display KPI cards
+    kpi1, kpi2, kpi3, kpi4 = st.columns(4)
+    kpi1.metric("📉 Attrition Rate", f"{attrition_rate:.1f}%")
+    kpi2.metric("🔁 Attrition Count", attrition_count)
+    kpi3.metric("⏳ Avg Years (Attrited)", f"{avg_years_attrited:.1f} yrs")
+    kpi4.metric("💰 Avg Monthly Income (Overall)", f"${avg_income:,.0f}")
+
+    # Extra KPI below if you want income too
     st.markdown("---")
+
+
     theme = "plotly_white"
 
-    # Charts
+    # Chart layout
     col1, col2 = st.columns(2)
 
     with col1:
@@ -86,6 +73,7 @@ if page == "Dashboard":
                             color_discrete_sequence=px.colors.qualitative.Vivid)
         st.plotly_chart(fig_gender, use_container_width=True)
 
+        # ✅ New: Years at Company Attrition
         fig_years = px.histogram(df, x="YearsAtCompany", color="Attrition", barmode="group",
                                  title="Employee Attrition by Years at Company", template=theme,
                                  color_discrete_sequence=px.colors.qualitative.Prism)
@@ -112,7 +100,6 @@ if page == "Dashboard":
 # -------------------------------
 else:
     st.subheader("🔮 Predict Employee Attrition (Logistic Regression)")
-    st.info("Fill out employee details below to predict attrition likelihood.")
 
     with st.form("prediction_form"):
         col1, col2 = st.columns(2)
@@ -135,32 +122,42 @@ else:
                 sorted(df["EnvironmentSatisfaction"].dropna().unique())
             )
 
-        submitted = st.form_submit_button("🚀 Predict")
+        submitted = st.form_submit_button("Predict")
 
     if submitted:
-        # Prepare input dataframe
-        input_dict = {
-            "Age": age,
-            "Gender": le_dict["Gender"].transform([gender])[0],
-            "JobRole": le_dict["JobRole"].transform([job_role])[0],
-            "Department": le_dict["Department"].transform([dept])[0],
-            "BusinessTravel": le_dict["BusinessTravel"].transform([business_travel])[0],
-            "EducationField": le_dict["EducationField"].transform([education_field])[0],
-            "MonthlyIncome": monthly_income,
-            "OverTime": le_dict["OverTime"].transform([overtime])[0],
-            "YearsAtCompany": years_at_company,
-            "TotalWorkingYears": total_working_years,
-            "EnvironmentSatisfaction": environment_satisfaction
-        }
+        # Create input DataFrame
+        input_data = pd.DataFrame({
+            "Age": [age],
+            "Gender": [gender],
+            "JobRole": [job_role],
+            "Department": [dept],
+            "BusinessTravel": [business_travel],
+            "EducationField": [education_field],
+            "MonthlyIncome": [monthly_income],
+            "OverTime": [overtime],
+            "YearsAtCompany": [years_at_company],
+            "TotalWorkingYears": [total_working_years],
+            "EnvironmentSatisfaction": [environment_satisfaction]
+        })
 
-        input_data = pd.DataFrame([input_dict], columns=feature_cols)
+        # Encode categorical variables
+        for col in input_data.columns:
+            if col in le_dict:
+                input_data[col] = le_dict[col].transform(input_data[col])
 
+        # Add any missing features
+        for col in feature_columns:
+            if col not in input_data:
+                input_data[col] = 0
+
+        input_data = input_data[feature_columns]
+
+        # Make prediction
         pred = log_model.predict(input_data)[0]
         proba = log_model.predict_proba(input_data)[0][1]
 
         st.write("---")
         if pred == 1:
-            st.error(f"⚠️ Employee is likely to **Leave** (Probability: {proba:.2f})")
+            st.error(f"⚠ Employee is likely to *Leave* (Probability: {proba:.2f})")
         else:
-            st.success(f"✅ Employee is likely to **Stay** (Probability: {1 - proba:.2f})")
-
+            st.success(f"✅ Employee is likely to *Stay* (Probability: {1 - proba:.2f})")
