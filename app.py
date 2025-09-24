@@ -10,9 +10,9 @@ import numpy as np
 # -------------------------------
 # Load Models, Encoders, and Data
 # -------------------------------
-log_model = pickle.load(open("models/logistic_model.pkl", "rb"))
-le_dict = pickle.load(open("models/label_encoders.pkl", "rb"))
-feature_cols = pickle.load(open("models/feature_columns.pkl", "rb"))
+log_model = pickle.load(open("logistic_model.pkl", "rb"))
+le_dict = pickle.load(open("label_encoders.pkl", "rb"))
+feature_cols = pickle.load(open("feature_columns.pkl", "rb"))
 
 df = pd.read_csv("HR Dataset.csv")  # Original dataset for dashboard
 
@@ -163,3 +163,4 @@ else:
             st.error(f"⚠️ Employee is likely to **Leave** (Probability: {proba:.2f})")
         else:
             st.success(f"✅ Employee is likely to **Stay** (Probability: {1 - proba:.2f})")
+
