@@ -34,6 +34,9 @@ page = st.sidebar.radio("Navigation", ["Dashboard", "Prediction"])
 # -------------------------------
 # DASHBOARD PAGE
 # -------------------------------
+# -------------------------------
+# DASHBOARD PAGE
+# -------------------------------
 if page == "Dashboard":
     st.title("Employee Attrition Dashboard")
 
@@ -54,9 +57,7 @@ if page == "Dashboard":
     kpi3.metric("⏳ Avg Years (Attrited)", f"{avg_years_attrited:.1f} yrs")
     kpi4.metric("💰 Avg Monthly Income (Overall)", f"${avg_income:,.0f}")
 
-    # Extra KPI below if you want income too
     st.markdown("---")
-
 
     theme = "plotly_white"
 
@@ -73,7 +74,6 @@ if page == "Dashboard":
                             color_discrete_sequence=px.colors.qualitative.Vivid)
         st.plotly_chart(fig_gender, use_container_width=True)
 
-        # ✅ New: Years at Company Attrition
         fig_years = px.histogram(df, x="YearsAtCompany", color="Attrition", barmode="group",
                                  title="Employee Attrition by Years at Company", template=theme,
                                  color_discrete_sequence=px.colors.qualitative.Prism)
@@ -85,15 +85,14 @@ if page == "Dashboard":
                              template=theme, color_discrete_sequence=px.colors.qualitative.Set3)
         st.plotly_chart(fig_marital, use_container_width=True)
 
-        fig_travel = px.histogram(df, x="BusinessTravel", color="Attrition", barmode="group",
-                                  title="Attrition by Business Travel", template=theme,
-                                  color_discrete_sequence=px.colors.qualitative.Pastel)
-        st.plotly_chart(fig_travel, use_container_width=True)
+        # New: Attrition by Education Field Bar Chart
+        fig_edu = px.bar(df, x="EducationField", color="Attrition", barmode="group",
+                         title="Employee Attrition by Education Field", template=theme,
+                         color_discrete_sequence=px.colors.qualitative.Pastel)
+        st.plotly_chart(fig_edu, use_container_width=True)
 
-        fig_income = px.box(df, x="JobRole", y="MonthlyIncome", color="Attrition",
-                            title="Monthly Income by Job Role", template=theme,
-                            color_discrete_sequence=px.colors.qualitative.D3)
-        st.plotly_chart(fig_income, use_container_width=True)
+        # Removed fig_income (Boxplot)
+
 
 # -------------------------------
 # PREDICTION PAGE
@@ -163,4 +162,5 @@ else:
             st.success(f"✅ Employee is likely to *Stay* (Probability: {1 - proba:.2f})")
 
            
+
 
