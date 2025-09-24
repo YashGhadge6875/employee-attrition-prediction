@@ -19,8 +19,10 @@ feature_columns = pickle.load(open("feature_columns.pkl", "rb"))
 
 df = pd.read_csv("HR Dataset.csv")
 
-# Clean column names
+# Clean column names and categorical values
 df.columns = df.columns.str.strip()
+for col in ["EducationField", "Gender", "MaritalStatus", "Attrition", "Department"]:
+    df[col] = df[col].astype(str).str.strip()
 
 # -------------------------------
 # Sidebar Navigation
@@ -31,24 +33,32 @@ page = st.sidebar.radio("Navigation", ["Dashboard", "Prediction"])
 # -------------------------------
 # DASHBOARD PAGE
 # -------------------------------
-# -------------------------------
-# DASHBOARD PAGE
-# -------------------------------
-# -------------------------------
-# DASHBOARD PAGE
-# -------------------------------
 if page == "Dashboard":
     st.title("Employee Attrition Dashboard")
 
-    # KPIs
-    attrited_df = df[df["Attrition"] == "Yes"]
-    attrition_rate = len(attrited_df) / len(df) * 100
-    attrition_count = len(attrited_df)
-    avg_income = df["MonthlyIncome"].mean()
+    # ---------------------------
+    # Sidebar filters for charts
+    # ---------------------------
+    st.sidebar.subheader("Filters")
+    selected_dept = st.sidebar.multiselect(
+        "Select Department", options=df["Department"].unique(), default=df["Department"].unique()
+    )
+    selected_gender = st.sidebar.multiselect(
+        "Select Gender", options=df["Gender"].unique(), default=df["Gender"].unique()
+    )
 
-    # New KPI: Avg Years at Company (Attrited vs Non-Attrited)
-    avg_years_attrited = df[df["Attrition"] == "Yes"]["YearsAtCompany"].mean()
-    avg_years_stayed = df[df["Attrition"] == "No"]["YearsAtCompany"].mean()
+    # Filter data
+    filtered_df = df[(df["Department"].isin(selected_dept)) & (df["Gender"].isin(selected_gender))]
+
+    # ---------------------------
+    # KPIs
+    # ---------------------------
+    attrited_df = filtered_df[filtered_df["Attrition"] == "Yes"]
+    attrition_rate = len(attrited_df) / len(filtered_df) * 100 if len(filtered_df) > 0 else 0
+    attrition_count = len(attrited_df)
+    avg_income = filtered_df["MonthlyIncome"].mean() if len(filtered_df) > 0 else 0
+    avg_years_attrited = filtered_df[filtered_df["Attrition"] == "Yes"]["YearsAtCompany"].mean() if len(filtered_df[filtered_df["Attrition"] == "Yes"]) > 0 else 0
+    avg_years_stayed = filtered_df[filtered_df["Attrition"] == "No"]["YearsAtCompany"].mean() if len(filtered_df[filtered_df["Attrition"] == "No"]) > 0 else 0
 
     # Display KPI cards
     kpi1, kpi2, kpi3, kpi4 = st.columns(4)
@@ -61,38 +71,45 @@ if page == "Dashboard":
 
     theme = "plotly_white"
 
-    # Chart layout
+    # ---------------------------
+    # Dashboard Charts
+    # ---------------------------
     col1, col2 = st.columns(2)
 
     with col1:
-        fig_pie = px.pie(df, names="Attrition", title="Employee Attrition Rate",
-                         hole=0.4, template=theme, color_discrete_sequence=px.colors.qualitative.Set2)
+        # Attrition Rate Pie
+        fig_pie = px.pie(filtered_df, names="Attrition", title="Employee Attrition Rate",
+                         hole=0.4, template=theme,
+                         color_discrete_sequence=px.colors.qualitative.Set2)
         st.plotly_chart(fig_pie, use_container_width=True)
 
-        fig_gender = px.bar(df, x="Gender", color="Attrition", barmode="group",
-                            title="Attrition by Gender", template=theme,
-                            color_discrete_sequence=px.colors.qualitative.Vivid)
+        # Attrition by Gender (bar)
+        fig_gender = px.histogram(filtered_df, x="Gender", color="Attrition", barmode="group",
+                                  title="Attrition by Gender", template=theme,
+                                  color_discrete_sequence=px.colors.qualitative.Vivid)
         st.plotly_chart(fig_gender, use_container_width=True)
 
-        fig_years = px.histogram(df, x="YearsAtCompany", color="Attrition", barmode="group",
-                                 title="Employee Attrition by Years at Company", template=theme,
+        # Attrition by Years at Company (histogram)
+        fig_years = px.histogram(filtered_df, x="YearsAtCompany", color="Attrition", barmode="group",
+                                 nbins=10,
+                                 title="Employee Attrition by Years at Company",
+                                 template=theme,
                                  color_discrete_sequence=px.colors.qualitative.Prism)
         st.plotly_chart(fig_years, use_container_width=True)
 
     with col2:
-        fig_marital = px.pie(df, names="MaritalStatus", color="Attrition",
+        # Attrition by Marital Status (pie)
+        fig_marital = px.pie(filtered_df, names="MaritalStatus", color="Attrition",
                              title="Attrition by Marital Status", hole=0.4,
                              template=theme, color_discrete_sequence=px.colors.qualitative.Set3)
         st.plotly_chart(fig_marital, use_container_width=True)
 
-        # New: Attrition by Education Field Bar Chart
-        fig_edu = px.bar(df, x="EducationField", color="Attrition", barmode="group",
-                         title="Employee Attrition by Education Field", template=theme,
-                         color_discrete_sequence=px.colors.qualitative.Pastel)
+        # Attrition by Education Field (bar)
+        fig_edu = px.histogram(filtered_df, x="EducationField", color="Attrition", barmode="group",
+                               title="Employee Attrition by Education Field",
+                               template=theme,
+                               color_discrete_sequence=px.colors.qualitative.Pastel)
         st.plotly_chart(fig_edu, use_container_width=True)
-
-        # Removed fig_income (Boxplot)
-
 
 # -------------------------------
 # PREDICTION PAGE
@@ -160,7 +177,3 @@ else:
             st.error(f"⚠ Employee is likely to *Leave* (Probability: {proba:.2f})")
         else:
             st.success(f"✅ Employee is likely to *Stay* (Probability: {1 - proba:.2f})")
-
-           
-
-
