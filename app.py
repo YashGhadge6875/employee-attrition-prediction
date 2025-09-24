@@ -74,42 +74,47 @@ if page == "Dashboard":
     # ---------------------------
     # Dashboard Charts
     # ---------------------------
-    col1, col2 = st.columns(2)
+    # ---------------------------
+# Dashboard Charts (Rearranged)
+# ---------------------------
+col1, col2 = st.columns(2)
 
-    with col1:
-        # Attrition Rate Pie
-        fig_pie = px.pie(filtered_df, names="Attrition", title="Employee Attrition Rate",
-                         hole=0.4, template=theme,
-                         color_discrete_sequence=px.colors.qualitative.Set2)
-        st.plotly_chart(fig_pie, use_container_width=True)
+with col1:
+    # Attrition Rate Pie
+    fig_pie = px.pie(filtered_df, names="Attrition", title="Employee Attrition Rate",
+                     hole=0.4, template=theme,
+                     color_discrete_sequence=px.colors.qualitative.Set2)
+    st.plotly_chart(fig_pie, use_container_width=True)
 
-        # Attrition by Gender (bar)
-        fig_gender = px.histogram(filtered_df, x="Gender", color="Attrition", barmode="group",
-                                  title="Attrition by Gender", template=theme,
-                                  color_discrete_sequence=px.colors.qualitative.Vivid)
-        st.plotly_chart(fig_gender, use_container_width=True)
+    # Attrition by Education Field (Bar)
+    fig_edu = px.histogram(filtered_df, x="EducationField", color="Attrition", barmode="group",
+                           title="Employee Attrition by Education Field",
+                           template=theme,
+                           color_discrete_sequence=px.colors.qualitative.Pastel)
+    st.plotly_chart(fig_edu, use_container_width=True)
 
-        # Attrition by Years at Company (histogram)
-        fig_years = px.histogram(filtered_df, x="YearsAtCompany", color="Attrition", barmode="group",
-                                 nbins=10,
-                                 title="Employee Attrition by Years at Company",
-                                 template=theme,
-                                 color_discrete_sequence=px.colors.qualitative.Prism)
-        st.plotly_chart(fig_years, use_container_width=True)
+with col2:
+    # Attrition by Gender (Bar)
+    fig_gender = px.histogram(filtered_df, x="Gender", color="Attrition", barmode="group",
+                              title="Attrition by Gender", template=theme,
+                              color_discrete_sequence=px.colors.qualitative.Vivid)
+    st.plotly_chart(fig_gender, use_container_width=True)
 
-    with col2:
-        # Attrition by Marital Status (pie)
-        fig_marital = px.pie(filtered_df, names="MaritalStatus", color="Attrition",
-                             title="Attrition by Marital Status", hole=0.4,
-                             template=theme, color_discrete_sequence=px.colors.qualitative.Set3)
-        st.plotly_chart(fig_marital, use_container_width=True)
+    # Attrition by Marital Status (Pie)
+    fig_marital = px.pie(filtered_df, names="MaritalStatus", color="Attrition",
+                         title="Attrition by Marital Status", hole=0.4,
+                         template=theme, color_discrete_sequence=px.colors.qualitative.Set3)
+    st.plotly_chart(fig_marital, use_container_width=True)
 
-        # Attrition by Education Field (bar)
-        fig_edu = px.histogram(filtered_df, x="EducationField", color="Attrition", barmode="group",
-                               title="Employee Attrition by Education Field",
-                               template=theme,
-                               color_discrete_sequence=px.colors.qualitative.Pastel)
-        st.plotly_chart(fig_edu, use_container_width=True)
+# Full width chart at the bottom
+st.markdown("### Employee Attrition by Years at Company")
+fig_years = px.histogram(filtered_df, x="YearsAtCompany", color="Attrition", barmode="group",
+                         nbins=10,
+                         title="Employee Attrition by Years at Company",
+                         template=theme,
+                         color_discrete_sequence=px.colors.qualitative.Prism)
+st.plotly_chart(fig_years, use_container_width=True)
+
 
 # -------------------------------
 # PREDICTION PAGE
@@ -177,3 +182,4 @@ else:
             st.error(f"⚠ Employee is likely to *Leave* (Probability: {proba:.2f})")
         else:
             st.success(f"✅ Employee is likely to *Stay* (Probability: {1 - proba:.2f})")
+
