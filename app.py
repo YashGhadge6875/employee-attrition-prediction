@@ -27,8 +27,8 @@ for col in ["EducationField", "Gender", "MaritalStatus", "Attrition", "Departmen
 # -------------------------------
 # Sidebar Navigation
 # -------------------------------
-st.sidebar.title("💼 Dashboard")
-page = st.sidebar.radio("Navigation", ["Dashboard", "Prediction"])
+st.sidebar.title("💼 Employee Attrition Tool")
+page = st.sidebar.radio("Navigation", ["Dashboard", "Prediction", "Dataset Preview"])
 
 # -------------------------------
 # DASHBOARD PAGE
@@ -115,7 +115,7 @@ if page == "Dashboard":
 # -------------------------------
 # PREDICTION PAGE
 # -------------------------------
-else:
+elif page == "Prediction":
     st.subheader("🔮 Predict Employee Attrition (Logistic Regression)")
 
     with st.form("prediction_form"):
@@ -192,3 +192,28 @@ else:
                 st.markdown(f"- {tip}")
         else:
             st.success(f"✅ Employee is likely to *Stay* (Probability: {1 - proba:.2f})")
+
+# -------------------------------
+# DATASET PREVIEW PAGE
+# -------------------------------
+else:
+    st.subheader("📊 Dataset Preview")
+
+    # Filters for dataset preview
+    st.sidebar.subheader("Dataset Filters")
+    selected_dept = st.sidebar.multiselect(
+        "Select Department", options=df["Department"].unique(), default=df["Department"].unique()
+    )
+    selected_gender = st.sidebar.multiselect(
+        "Select Gender", options=df["Gender"].unique(), default=df["Gender"].unique()
+    )
+
+    # Filter dataset
+    preview_df = df[(df["Department"].isin(selected_dept)) & (df["Gender"].isin(selected_gender))]
+
+    # Show dataset
+    st.dataframe(preview_df.reset_index(drop=True), use_container_width=True)
+
+    # Show summary stats
+    st.markdown("### Dataset Summary")
+    st.write(preview_df.describe(include='all'))
