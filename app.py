@@ -174,7 +174,21 @@ else:
         proba = log_model.predict_proba(input_data)[0][1]
 
         st.write("---")
+
+        # Retention tips
+        retention_tips = [
+            "💡 Consider offering a salary review or bonus to retain the employee.",
+            "💡 Provide opportunities for career growth and promotions.",
+            "💡 Improve work-life balance, flexible hours, or remote work options.",
+            "💡 Recognize and reward achievements publicly.",
+            "💡 Assign a mentor or provide training to increase engagement.",
+            "💡 Encourage open feedback and address concerns proactively."
+        ]
+
         if pred == 1:
             st.error(f"⚠ Employee is likely to *Leave* (Probability: {proba:.2f})")
+            st.markdown("### Retention Suggestions:")
+            for tip in retention_tips:
+                st.markdown(f"- {tip}")
         else:
             st.success(f"✅ Employee is likely to *Stay* (Probability: {1 - proba:.2f})")
