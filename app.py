@@ -1,36 +1,63 @@
 # -------------------------------
-# Page Config
+# Imports
+# -------------------------------
+import streamlit as st
+import pandas as pd
+import pickle
+import plotly.express as px
+import numpy as np
+
+# -------------------------------
+# Load Models, Encoders, and Data
+# -------------------------------
+log_model = pickle.load(open("models/logistic_model.pkl", "rb"))
+le_dict = pickle.load(open("models/label_encoders.pkl", "rb"))
+feature_cols = pickle.load(open("models/feature_columns.pkl", "rb"))
+
+df = pd.read_csv("HR Dataset.csv")  # Original dataset for dashboard
+
+# Encode categorical columns for dashboard visualizations
+for col, le in le_dict.items():
+    if col in df.columns:
+        df[col] = le.transform(df[col])
+
+# -------------------------------
+# Page Selection
+# -------------------------------
+page = st.sidebar.selectbox("Choose Page", ["Dashboard", "Prediction"])
+
+# -------------------------------
+# Page Config & Custom CSS
 # -------------------------------
 st.set_page_config(page_title="Employee Attrition Prediction", layout="wide")
 
-# Custom CSS for attractive KPIs
 st.markdown("""
-    <style>
-    .big-font {
-        font-size:20px !important;
-        font-weight:600;
-        color:#2F4F4F;
-    }
-    .metric-card {
-        background-color: #f9f9f9;
-        padding: 15px;
-        border-radius: 12px;
-        text-align: center;
-        box-shadow: 2px 2px 10px rgba(0,0,0,0.05);
-    }
-    </style>
+<style>
+.big-font {
+    font-size:20px !important;
+    font-weight:600;
+    color:#2F4F4F;
+}
+.metric-card {
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 2px 2px 10px rgba(0,0,0,0.05);
+}
+</style>
 """, unsafe_allow_html=True)
 
 # -------------------------------
 # DASHBOARD PAGE
 # -------------------------------
 if page == "Dashboard":
-    st.image("HR image.png", use_container_width=True)  # ✅ Banner/logo
+    st.image("HR image.png", use_container_width=True)
     st.title("📊 Employee Attrition Dashboard")
     st.markdown("<div class='big-font'>A bright and interactive dashboard to analyze attrition trends</div>", unsafe_allow_html=True)
 
     # KPIs
-    attrited_df = df[df["Attrition"] == "Yes"]
+    attrited_df = df[df["Attrition"] == 1]  # 1 = Yes after encoding
     attrition_rate = len(attrited_df) / len(df) * 100
     attrition_count = len(attrited_df)
     avg_income = df["MonthlyIncome"].mean()
@@ -44,7 +71,6 @@ if page == "Dashboard":
         st.markdown(f"<div class='metric-card'>💰<br>Avg Monthly Income<br><h3>${avg_income:,.0f}</h3></div>", unsafe_allow_html=True)
 
     st.markdown("---")
-
     theme = "plotly_white"
 
     # Charts
@@ -112,7 +138,23 @@ else:
         submitted = st.form_submit_button("🚀 Predict")
 
     if submitted:
-        # Prediction logic same as yours...
+        # Prepare input dataframe
+        input_dict = {
+            "Age": age,
+            "Gender": le_dict["Gender"].transform([gender])[0],
+            "JobRole": le_dict["JobRole"].transform([job_role])[0],
+            "Department": le_dict["Department"].transform([dept])[0],
+            "BusinessTravel": le_dict["BusinessTravel"].transform([business_travel])[0],
+            "EducationField": le_dict["EducationField"].transform([education_field])[0],
+            "MonthlyIncome": monthly_income,
+            "OverTime": le_dict["OverTime"].transform([overtime])[0],
+            "YearsAtCompany": years_at_company,
+            "TotalWorkingYears": total_working_years,
+            "EnvironmentSatisfaction": environment_satisfaction
+        }
+
+        input_data = pd.DataFrame([input_dict], columns=feature_cols)
+
         pred = log_model.predict(input_data)[0]
         proba = log_model.predict_proba(input_data)[0][1]
 
