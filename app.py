@@ -31,30 +31,32 @@ page = st.sidebar.radio("Navigation", ["Dashboard", "Prediction"])
 # -------------------------------
 # DASHBOARD PAGE
 # -------------------------------
+# -------------------------------
+# DASHBOARD PAGE
+# -------------------------------
 if page == "Dashboard":
     st.title("Employee Attrition Dashboard")
 
     # KPIs
     attrited_df = df[df["Attrition"] == "Yes"]
     attrition_rate = len(attrited_df) / len(df) * 100
-    total_employees = len(df)
     attrition_count = len(attrited_df)
-
-    # New KPIs
-    top_dept_attrition = (
-        attrited_df["Department"].value_counts().idxmax()
-        if not attrited_df["Department"].empty else "N/A"
-    )
     avg_income = df["MonthlyIncome"].mean()
+
+    # New KPI: Avg Years at Company (Attrited vs Non-Attrited)
+    avg_years_attrited = df[df["Attrition"] == "Yes"]["YearsAtCompany"].mean()
+    avg_years_stayed = df[df["Attrition"] == "No"]["YearsAtCompany"].mean()
 
     # Display KPI cards
     kpi1, kpi2, kpi3, kpi4 = st.columns(4)
     kpi1.metric("📉 Attrition Rate", f"{attrition_rate:.1f}%")
     kpi2.metric("🔁 Attrition Count", attrition_count)
-    kpi3.metric("🏢 Top Dept (Attrition)", top_dept_attrition)
-    kpi4.metric("💰 Avg Monthly Income", f"${avg_income:,.0f}")
+    kpi3.metric("⏳ Avg Years (Attrited)", f"{avg_years_attrited:.1f} yrs")
+    kpi4.metric("💰 Avg Monthly Income (Overall)", f"${avg_income:,.0f}")
 
+    # Extra KPI below if you want income too
     st.markdown("---")
+
 
     theme = "plotly_white"
 
@@ -159,5 +161,6 @@ else:
             st.error(f"⚠️ Employee is likely to **Leave** (Probability: {proba:.2f})")
         else:
             st.success(f"✅ Employee is likely to **Stay** (Probability: {1 - proba:.2f})")
+
 
 
