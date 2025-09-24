@@ -39,16 +39,20 @@ if page == "Dashboard":
     attrition_rate = len(attrited_df) / len(df) * 100
     total_employees = len(df)
     attrition_count = len(attrited_df)
-    top_attrited_role = (
-        attrited_df["JobRole"].value_counts().idxmax()
-        if not attrited_df["JobRole"].empty else "N/A"
+
+    # New KPIs
+    top_dept_attrition = (
+        attrited_df["Department"].value_counts().idxmax()
+        if not attrited_df["Department"].empty else "N/A"
     )
+    avg_income = df["MonthlyIncome"].mean()
 
     # Display KPI cards
-    kpi1, kpi2, kpi3 = st.columns(3)
+    kpi1, kpi2, kpi3, kpi4 = st.columns(4)
     kpi1.metric("📉 Attrition Rate", f"{attrition_rate:.1f}%")
     kpi2.metric("🔁 Attrition Count", attrition_count)
-    kpi3.metric("🏷️ Top Attrited Role", top_attrited_role)
+    kpi3.metric("🏢 Top Dept (Attrition)", top_dept_attrition)
+    kpi4.metric("💰 Avg Monthly Income", f"${avg_income:,.0f}")
 
     st.markdown("---")
 
@@ -155,4 +159,5 @@ else:
             st.error(f"⚠️ Employee is likely to **Leave** (Probability: {proba:.2f})")
         else:
             st.success(f"✅ Employee is likely to **Stay** (Probability: {1 - proba:.2f})")
+
 
